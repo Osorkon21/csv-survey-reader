@@ -1,12 +1,12 @@
 {
   "name": "csv-survey-reader",
-  "description": "Analyzes .csv survey files for easier reading",
+  "description": "Analyzes Survey Monkey .csv files",
   "private": true,
   "version": "1.0.0",
   "author": "Osorkon21",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build && electron-builder",
+    "build": "tsc && vite build && electron-builder --w=portable",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
@@ -30,5 +30,23 @@
     "vite-plugin-electron": "^0.14.0",
     "vite-plugin-electron-renderer": "^0.14.5"
   },
-  "main": "dist-electron/main.js"
+  "main": "dist-electron/main.js",
+  "build": {
+    "appId": "csv-survey-reader-app",
+    "productName": "CSV Survey Reader",
+    "copyright": "Copyright © 2024 Osorkon21",
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
+  }
 }
