@@ -1,5 +1,6 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import path from 'node:path'
+import fs from "fs/promises"
 
 // The built directory structure
 //
@@ -18,12 +19,28 @@ let win: BrowserWindow | null
 // 🚧 Use ['ENV_NAME'] avoid vite:define plugin - Vite@2.x
 const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
 
+async function handleOpenFile() {
+  const { canceled, filePaths } = await dialog.showOpenDialog({})
+  if (!canceled) {
+    return filePaths[0]
+  }
+}
+
+async function handleReadFile(filePath: string) {
+  const content = await fs.readFile(filePath, "utf-8")
+
+  return content;
+}
+
 function createWindow() {
   win = new BrowserWindow({
+    width: 1200,
+    height: 900,
     icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
+    autoHideMenuBar: true
   })
 
   // Test active push message to Renderer-process.
@@ -49,12 +66,17 @@ app.on('window-all-closed', () => {
   }
 })
 
-app.on('activate', () => {
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow()
-  }
-})
+app.whenReady().then(() => {
+  ipcMain.handle("dialog:openFile", handleOpenFile);
+  ipcMain.handle("dialog:readFile", (_, filePath: string) => handleReadFile(filePath));
 
-app.whenReady().then(createWindow)
+  createWindow();
+
+  app.on('activate', () => {
+    // On OS X it's common to re-create a window in the app when the
+    // dock icon is clicked and there are no other windows open.
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow()
+    }
+  })
+})

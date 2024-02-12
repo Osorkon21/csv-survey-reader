@@ -1,7 +1,17 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
+export type ContextBridgeApi = {
+  openFile: () => Promise<string>,
+  readFile: (filePath: string) => Promise<string>
+}
+
 // --------- Expose some API to the Renderer process ---------
 contextBridge.exposeInMainWorld('ipcRenderer', withPrototype(ipcRenderer))
+
+contextBridge.exposeInMainWorld("api", {
+  openFile: () => ipcRenderer.invoke("dialog:openFile"),
+  readFile: (filePath: string) => ipcRenderer.invoke("dialog:readFile", filePath)
+});
 
 // `exposeInMainWorld` can't detect attributes and methods of `prototype`, manually patching it.
 function withPrototype(obj: Record<string, any>) {
