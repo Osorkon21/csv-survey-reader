@@ -28,7 +28,8 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
-    autoHideMenuBar: true
+    autoHideMenuBar: true,
+    show: false
   })
 
   // Test active push message to Renderer-process.
@@ -42,6 +43,10 @@ function createWindow() {
     // win.loadFile('dist/index.html')
     win.loadFile(path.join(process.env.DIST, 'index.html'))
   }
+
+  win.once("ready-to-show", () => {
+    win?.show();
+  })
 }
 
 // Quit when all windows are closed, except on macOS. There, it's common
