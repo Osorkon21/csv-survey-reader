@@ -1,6 +1,7 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain } from 'electron'
 import path from 'node:path'
-import fs from "fs/promises"
+import { handleOpenFile, handleReadFile } from "./handle-functions"
+
 
 // The built directory structure
 //
@@ -18,19 +19,6 @@ process.env.VITE_PUBLIC = app.isPackaged ? process.env.DIST : path.join(process.
 let win: BrowserWindow | null
 // 🚧 Use ['ENV_NAME'] avoid vite:define plugin - Vite@2.x
 const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
-
-async function handleOpenFile() {
-  const { canceled, filePaths } = await dialog.showOpenDialog({})
-  if (!canceled) {
-    return filePaths[0]
-  }
-}
-
-async function handleReadFile(filePath: string) {
-  const content = await fs.readFile(filePath, "utf-8")
-
-  return content;
-}
 
 function createWindow() {
   win = new BrowserWindow({
