@@ -6,21 +6,25 @@ interface SelectProps {
 
 export default function SelectPage({ content }: SelectProps) {
 
+  /** question index */
+  interface Question {
+    questionIndex: number
+  }
+
+  /** question index, count, lines where value present */
+  interface QuestionCountLines extends Question {
+    count: number,
+    lines: number[]
+  };
+
   /** question index, line where value present */
-  interface QuestionAndLine {
-    questionIndex: number,
+  interface QuestionAndLine extends Question {
     line: number
   }
 
-  /** count, question index, line where value present */
-  interface CountQuestionLine extends QuestionAndLine {
+  /** question index, line where value present, count */
+  interface QuestionLineCount extends QuestionAndLine {
     count: number,
-  };
-
-  /** count, lines where value present */
-  interface CountQuestionLines {
-    count: number,
-    lines: number[]
   };
 
   // process each line
@@ -44,11 +48,14 @@ export default function SelectPage({ content }: SelectProps) {
 
   const [phrases, setPhrases] = useState([""])
 
-  /** phrase, line number */
-  const phraseMap = new Map<string, QuestionAndLine>();
+  /** question index, question */
+  const questionMap = new Map<number, string>();
 
-  /** word, [count, line locations] */
-  const wordMap = new Map<string, CountQuestionLines>();
+  /** question index, line number, phrase */
+  const phraseMap = new Map<QuestionAndLine, string>();
+
+  /** word, question index, count, line number */
+  const wordMap = new Map<string, QuestionCountLines>();
 
   /**
    * Determines whether the string should be filtered out
@@ -64,6 +71,22 @@ export default function SelectPage({ content }: SelectProps) {
     return letterCount >= digitCount;
   }
 
+  /**
+   * Adds first line questions to questionMap, optimized for searching by question index
+   * @param map first line string with question index and line number
+   */
+  function processFirstLine(map: Map<string, QuestionAndLine>): void {
+    for (let [phrase, qal] of map) {
+      questionMap.set(qal.questionIndex, phrase)
+    }
+  }
+
+  /**
+   * Processes a line from a .csv file split by commas, accounts for the presence of delimiters in entries, adds question index and line numbers
+   * @param arr the split line to process
+   * @param line line number in .csv file
+   * @returns map with relevant entries and metadata
+   */
   function formatSplitLine(arr: string[], line: number): Map<string, QuestionAndLine> {
     let map = new Map<string, QuestionAndLine>();
 
@@ -106,39 +129,38 @@ export default function SelectPage({ content }: SelectProps) {
 
   function processContent(content: string) {
 
-    /** phrase, {count, question index, line number} */
-    let phraseCounter = new Map<string, CountQuestionLine>();
+    /** phrase, {question index, line number, count} */
+    let phraseCounter = new Map<string, QuestionLineCount>();
 
     let lines = content.replace(/\r\n/g, "\n").split("\n");
 
-    // add questions from first line of file to a new QuestionMap
+    // add questions to questionMap
+    processFirstLine(formatSplitLine(lines[0].split(","), 1))
 
-    // ignore survey questions on first line
-    for (let i = 1; i < lines.length; i++) {
+    // ignore survey questions on first line and choices on second line
+    for (let i = 2; i < lines.length; i++) {
       let splitLine = lines[i].split(",");
 
       let formattedLines = formatSplitLine(splitLine, i + 1);
 
-      console.log(formattedLines)
+      for (let [phrase, qal] of formattedLines) {
+        let phraseCount = phraseCounter.get(phrase);
 
-      // for (let [phrase, qal] of formattedPhrases) {
-      //   let phraseCount = phraseCounter.get(phrase);
-
-      //   if (phraseCount !== undefined) {
-      //     phraseCounter.set(phrase, { ...phraseCount, count: phraseCount.count + 1 });
-      //   }
-      //   else
-      //     phraseCounter.set(phrase, { questionIndex: qal.questionIndex, count: 1, line: i + 1 });
-      // }
+        if (phraseCount !== undefined) {
+          phraseCounter.set(phrase, { ...phraseCount, count: phraseCount.count + 1 });
+        }
+        else
+          phraseCounter.set(phrase, { questionIndex: qal.questionIndex, count: 1, line: qal.line });
+      }
     }
 
-    // for (let [phrase, cql] of phraseCounter) {
-    //   if (cql.count === 1) {
-    //     phraseMap.set(phrase, { questionIndex: cql.questionIndex, line: cql.line })
-    //   }
-    // }
+    for (let [phrase, qlc] of phraseCounter) {
+      if (qlc.count === 1) {
+        phraseMap.set({ questionIndex: qlc.questionIndex, line: qlc.line }, phrase)
+      }
+    }
 
-    // console.log(phraseMap);
+    console.log(phraseMap);
 
     // add to wordMap here
 
