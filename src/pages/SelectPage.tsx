@@ -2,20 +2,15 @@ import { useState, useEffect } from "react"
 
 interface SelectProps {
   content: string
+  wordCountCutoff: number
 }
 
-export default function SelectPage({ content }: SelectProps) {
+export default function SelectPage({ content, wordCountCutoff }: SelectProps) {
 
   /** question index */
   interface Question {
     questionIndex: number
   }
-
-  /** question index, count, lines where value present */
-  interface QuestionCountLines extends Question {
-    count: number,
-    lines: number[]
-  };
 
   /** question index, line where value present */
   interface QuestionAndLine extends Question {
@@ -26,6 +21,12 @@ export default function SelectPage({ content }: SelectProps) {
   interface QuestionLineCount extends QuestionAndLine {
     count: number,
   };
+
+  /** count, [{question index, line number}] */
+  type WordData = {
+    count: number,
+    data: QuestionAndLine[]
+  }
 
   // process each line
 
@@ -46,7 +47,8 @@ export default function SelectPage({ content }: SelectProps) {
 
   // display all responses from that line if word in that line is selected for more context?
 
-  const [phrases, setPhrases] = useState([""])
+  const [words, setWords] = useState(new Map<string, WordData>());
+
 
   /** question index, question */
   const questionMap = new Map<number, string>();
@@ -54,8 +56,8 @@ export default function SelectPage({ content }: SelectProps) {
   /** question index, line number, phrase */
   const phraseMap = new Map<QuestionAndLine, string>();
 
-  /** word, question index, count, line number */
-  const wordMap = new Map<string, QuestionCountLines>();
+  /** word, count, [{question index, line number}] */
+  const wordMap = new Map<string, WordData>();
 
   /**
    * Determines whether the string should be filtered out
@@ -160,11 +162,33 @@ export default function SelectPage({ content }: SelectProps) {
       }
     }
 
-    console.log(phraseMap);
+    let wordCounter: { [word: string]: WordData } = {};
 
-    // add to wordMap here
+    for (let [{ questionIndex, line }, phrase] of phraseMap) {
+      let words = phrase.split(" ");
 
-    // console.log(filteredFirstResponse.join(" "))
+      for (let word of words) {
+        word = word.toLowerCase();
+
+        if (wordCounter[word] === undefined)
+          wordCounter[word] = { count: 0, data: [] }
+
+        wordCounter[word].count++;
+
+        if (!wordCounter[word].data.includes({ questionIndex: questionIndex, line: line }))
+          wordCounter[word].data.push({ questionIndex: questionIndex, line: line })
+      }
+    }
+
+    for (let [word, wordData] of Object.entries(wordCounter)) {
+      if (wordData.count > wordCountCutoff)
+        wordMap.set(word, wordData);
+    }
+
+    console.log(wordMap);
+
+    // for each word, you need to track which question and which line it is present in
+
   }
 
   useEffect(() => {
@@ -172,8 +196,8 @@ export default function SelectPage({ content }: SelectProps) {
   }, [])
 
   return (
-    <>
+    <div className="d-flex flex-column align-items-center gap-2">
       <button onClick={() => processContent(content)}>process content</button>
-    </>
+    </div>
   )
 }

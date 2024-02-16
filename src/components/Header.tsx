@@ -1,7 +1,7 @@
 export default function Header() {
   return (
     <>
-      <h1 style={{ fontFamily: "Helvetica serif" }}>CSV SURVEY READER</h1>
+      <button className="btn btn-success" style={{ fontFamily: "Helvetica serif" }} onClick={() => window.location.href = "/"}>CSV SURVEY READER</button>
     </>
   )
 }

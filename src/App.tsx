@@ -14,6 +14,7 @@ declare global {
 
 export default function App() {
   const [content, setContent] = useState("");
+  const [wordCountCutoff, setWordCountCutoff] = useState(5);
 
   return (
     <HashRouter>
@@ -24,9 +25,12 @@ export default function App() {
       <Routes>
         <Route path="/" element={<LandingPage
           setContent={setContent}
+          wordCountCutoff={wordCountCutoff}
+          setWordCountCutoff={setWordCountCutoff}
         />} />
         <Route path="/select" element={<SelectPage
           content={content}
+          wordCountCutoff={wordCountCutoff}
         />} />
       </Routes>
     </HashRouter>
