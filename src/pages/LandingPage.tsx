@@ -24,7 +24,7 @@ export default function LandingPage({ setContent, wordCountCutoff, setWordCountC
   }
 
   function handleInputChange(e: any) {
-    if (e.target.value <= 0)
+    if (e.target.value < 0)
       return;
 
     setWordCountCutoff(e.target.value);
@@ -32,10 +32,10 @@ export default function LandingPage({ setContent, wordCountCutoff, setWordCountC
 
   return (
     <>
-      <div className="d-flex flex-column justify-content-center align-items-center h-75 gap-2">
+      <div className="d-flex flex-column justify-content-center align-items-center gap-2" style={{ height: "99%" }}>
 
         <label htmlFor="word-cutoff">Do not display words that occur fewer than</label>
-        <input type="number" value={wordCountCutoff} id="word-cutoff" style={{ width: "15%" }} onChange={handleInputChange}></input>
+        <input type="number" value={wordCountCutoff} id="word-cutoff" style={{ width: "60px" }} onChange={handleInputChange}></input>
         <p>times</p>
 
         <button className="btn btn-primary" onClick={handleButtonClick}>Select .csv File</button>

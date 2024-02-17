@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import path from 'node:path'
-import { handleOpenFile, handleReadFile } from "./handle-functions"
+import { handleGetFromStore, handleSetToStore, handleOpenFile, handleReadFile, IgnoreParams } from "./handle-functions"
 
 
 // The built directory structure
@@ -62,6 +62,8 @@ app.on('window-all-closed', () => {
 app.whenReady().then(() => {
   ipcMain.handle("dialog:openFile", handleOpenFile);
   ipcMain.handle("dialog:readFile", (_, filePath: string) => handleReadFile(filePath));
+  ipcMain.handle("dialog:getFromStore", (_, key: string) => handleGetFromStore(key));
+  ipcMain.handle("dialog:setToStore", (_, key: string, ignoreList: IgnoreParams[]) => handleSetToStore(key, ignoreList));
 
   createWindow();
 

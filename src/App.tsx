@@ -1,10 +1,11 @@
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import './App.css'
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import type { ContextBridgeApi } from '../electron/preload';
 import { LandingPage, SelectPage } from "./pages"
 import { Header } from "./components"
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { defaultIgnoreFile } from './utils/default-ignore-file';
 
 declare global {
   interface Window {
@@ -15,6 +16,23 @@ declare global {
 export default function App() {
   const [content, setContent] = useState("");
   const [wordCountCutoff, setWordCountCutoff] = useState(5);
+  const [ignoreFile, setIgnoreFile] = useState([{}]);
+
+  async function loadIgnoreFile() {
+    let iFile = await window.api.getFromStore("ignore-file");
+
+    if (iFile === undefined) {
+      await window.api.setToStore("ignore-file", defaultIgnoreFile)
+      setIgnoreFile(defaultIgnoreFile);
+    }
+    else {
+      setIgnoreFile(iFile);
+    }
+  }
+
+  useEffect(() => {
+    loadIgnoreFile();
+  }, [])
 
   return (
     <HashRouter>

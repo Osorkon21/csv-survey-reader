@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 
 interface SelectProps {
   content: string
@@ -47,7 +47,7 @@ export default function SelectPage({ content, wordCountCutoff }: SelectProps) {
 
   // display all responses from that line if word in that line is selected for more context?
 
-  const [words, setWords] = useState(new Map<string, WordData>());
+  // const [words, setWords] = useState(new Map<string, WordData>());
 
 
   /** question index, question */
@@ -129,20 +129,19 @@ export default function SelectPage({ content, wordCountCutoff }: SelectProps) {
     return map;
   }
 
-  function processContent(content: string) {
-
-    /** phrase, {question index, line number, count} */
+  /**
+   * Takes in a .csv file split by line and determines if entry is unique and relevant
+   * @param lines lines of .csv file
+   * @returns map with phrase and metadata
+   */
+  function populatePhraseCounter(lines: string[]): Map<string, QuestionLineCount> {
     let phraseCounter = new Map<string, QuestionLineCount>();
-
-    let lines = content.replace(/\r\n/g, "\n").split("\n");
-
-    // add questions to questionMap
-    processFirstLine(formatSplitLine(lines[0].split(","), 1))
 
     // ignore survey questions on first line and choices on second line
     for (let i = 2; i < lines.length; i++) {
       let splitLine = lines[i].split(",");
 
+      // account for delimiters in entries, discard unwanted entries
       let formattedLines = formatSplitLine(splitLine, i + 1);
 
       for (let [phrase, qal] of formattedLines) {
@@ -156,12 +155,22 @@ export default function SelectPage({ content, wordCountCutoff }: SelectProps) {
       }
     }
 
+    return phraseCounter;
+  }
+
+  /**
+   * Adds unique phrases and metadata to map
+   * @param phraseCounter phrase count with metadata
+   */
+  function populatePhraseMap(phraseCounter: Map<string, QuestionLineCount>) {
     for (let [phrase, qlc] of phraseCounter) {
       if (qlc.count === 1) {
         phraseMap.set({ questionIndex: qlc.questionIndex, line: qlc.line }, phrase)
       }
     }
+  }
 
+  function populateWordCounter(): { [word: string]: WordData } {
     let wordCounter: { [word: string]: WordData } = {};
 
     for (let [{ questionIndex, line }, phrase] of phraseMap) {
@@ -180,15 +189,43 @@ export default function SelectPage({ content, wordCountCutoff }: SelectProps) {
       }
     }
 
+    return wordCounter;
+  }
+
+  function populateWordMap(wordCounter: { [word: string]: WordData }) {
+    let tempArr: { word: string, data: WordData }[] = [];
+
     for (let [word, wordData] of Object.entries(wordCounter)) {
       if (wordData.count > wordCountCutoff)
-        wordMap.set(word, wordData);
+        tempArr.push({ word: word, data: wordData });
     }
 
+    tempArr.sort((a, b) => {
+      return b.data.count - a.data.count;
+    });
+
+    for (let { word, data } of tempArr) {
+      wordMap.set(word, data);
+    }
+
+    // add logic to filter words that are in ignore list
+  }
+
+  function processContent(content: string) {
+
+    // normalize line endings for different OSes
+    let lines = content.replace(/\r\n/g, "\n").split("\n");
+
+    // add questions to questionMap
+    processFirstLine(formatSplitLine(lines[0].split(","), 1))
+
+    // add relevant phrases with metadata to map
+    populatePhraseMap(populatePhraseCounter(lines));
+
+    // add relevant words with metadata to map
+    populateWordMap(populateWordCounter());
+
     console.log(wordMap);
-
-    // for each word, you need to track which question and which line it is present in
-
   }
 
   useEffect(() => {
