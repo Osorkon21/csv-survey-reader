@@ -41,12 +41,13 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
   // keywords user can search for
   const [wordMap, setWordMap] = useState(new Map<string, WordData>());
   const [display, setDisplay] = useState(false);
+  const [defaultWordMap, setDefaultWordMap] = useState(new Map<string, WordData>());
 
-  // question index, question
-  const [questionMap, setQuestionMap] = useState(new Map<number, string>());
+  /** question index, question */
+  const questionMap = new Map<number, string>();
 
-  // question index, line number, phrase
-  const [phraseMap, setPhraseMap] = useState(new Map<QuestionAndLine, string>());
+  /** question index, line number, phrase */
+  const phraseMap = new Map<QuestionAndLine, string>();
 
   /**
    * Determines whether the string should be filtered out
@@ -67,13 +68,9 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
    * @param map first line string with question index and line number
    */
   function processFirstLine(map: Map<string, QuestionAndLine>): void {
-    let tempMap = new Map<number, string>();
-
     for (let [phrase, qal] of map) {
-      tempMap.set(qal.questionIndex, phrase)
+      questionMap.set(qal.questionIndex, phrase)
     }
-
-    setQuestionMap(tempMap);
   }
 
   /**
@@ -156,15 +153,11 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
    * @param phraseCounter phrase count with metadata
    */
   function populatePhraseMap(phraseCounter: Map<string, QuestionLineCount>) {
-    let tempMap = new Map<QuestionAndLine, string>();
-
     for (let [phrase, qlc] of phraseCounter) {
       if (qlc.count === 1) {
-        tempMap.set({ questionIndex: qlc.questionIndex, line: qlc.line }, phrase)
+        phraseMap.set({ questionIndex: qlc.questionIndex, line: qlc.line }, phrase)
       }
     }
-
-    setPhraseMap(tempMap);
   }
 
   function populateWordCounter(): { [word: string]: WordData } {
@@ -204,6 +197,8 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
     for (let { word, data } of tempArr) {
       updateWordMap(word, data)
     }
+
+    setWordMap(wordMap);
   }
 
   function updateWordMap(word: string, data: WordData) {
@@ -217,25 +212,16 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
     let lines = content.replace(/\r\n/g, "\n").split("\n");
 
     // add questions to questionMap
-    if (!questionMap.size) {
-      console.log("questionMap is empty")
+    if (!questionMap.size)
       processFirstLine(formatSplitLine(lines[0].split(","), 1))
-    }
-
 
     // add relevant phrases with metadata to map
-    if (!phraseMap.size) {
-      console.log("phraseMap is empty")
+    if (!phraseMap.size)
       populatePhraseMap(populatePhraseCounter(lines));
-    }
-
 
     // add relevant words with metadata to map
-    if (!wordMap.size) {
-      console.log("wordMap is empty")
+    if (!wordMap.size)
       populateWordMap(populateWordCounter());
-      setWordMap(new Map(wordMap));
-    }
 
     setDisplay(true);
   }
@@ -266,13 +252,10 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
   }
 
   function pruneWordMap() {
-    console.log("before clear", wordMap)
-
-    wordMap.clear();
-
-    populateWordMap(populateWordCounter());
-
-    console.log("after clear", wordMap)
+    for (let [word, _] of wordMap) {
+      if (ignoreFile.find((iParams) => iParams.word === word))
+        wordMap.delete(word)
+    }
 
     setWordMap(new Map(wordMap));
   }
@@ -280,24 +263,13 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
   useEffect(() => {
     if (content !== "") {
       processContent(content);
-
       console.log("content processed")
     }
   }, [content])
 
   useEffect(() => {
-    console.log("questionMap", questionMap)
-    console.log("phraseMap", phraseMap)
     pruneWordMap();
   }, [ignoreFile])
-
-  useEffect(() => {
-    console.log(questionMap)
-  }, [questionMap])
-
-  useEffect(() => {
-    console.log(phraseMap)
-  }, [phraseMap])
 
   return (
     <div className="d-flex flex-column justify-content-center align-items-center gap-2">
@@ -309,11 +281,9 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
             <div className="text-start" style={{ width: "47%" }}>
               Word count
             </div>
-            {/* <div className="border"></div> */}
             <div className="text-start" style={{ width: "28%" }}>
               Ignore permanently
             </div>
-            {/* <div className="border"></div> */}
             <div className="text-end" style={{ width: "25%" }}>
               Ignore for session
             </div>
@@ -338,7 +308,6 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
                 <div>
                   <button type="button" onClick={() => addToIgnoreFile(word, false)}>Ignore</button>
                 </div>
-
               </div>
             )
           })}
