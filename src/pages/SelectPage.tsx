@@ -1,12 +1,16 @@
-import { useEffect } from "react"
+import { useState, useEffect } from "react"
+import { IgnoreParams } from "../../electron/handle-functions"
 
 interface SelectProps {
   content: string
   wordCountCutoff: number
+  ignoreFile: IgnoreParams[]
+  setIgnoreFile: React.Dispatch<React.SetStateAction<IgnoreParams[]>>
+  searchWords: string[]
+  setSearchWords: React.Dispatch<React.SetStateAction<string[]>>
 }
 
-export default function SelectPage({ content, wordCountCutoff }: SelectProps) {
-
+export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIgnoreFile, searchWords, setSearchWords }: SelectProps) {
   /** question index */
   interface Question {
     questionIndex: number
@@ -28,36 +32,21 @@ export default function SelectPage({ content, wordCountCutoff }: SelectProps) {
     data: QuestionAndLine[]
   }
 
-  // process each line
-
-  // ignore first line
-  // split line by commas
-  // if phrase is all/mostly numbers, ignore
-  // save full phrase for checking against identicals
-
-  // once all lines processed
-
-  // compare phrases, eliminate identicals
-  // go thru remaining phrases, lowercase all, do word count
-  // check words against temporary and permanent "word ignore list", discard matches
-
   // display words (with their counts) next to checkboxes "search by" or "add to ignore list"
 
   // if "search by" box is checked for a word and "search" button is hit, display all phrases where this word appears, along with the response number (line number, so user can find response if they want more context)
 
   // display all responses from that line if word in that line is selected for more context?
 
-  // const [words, setWords] = useState(new Map<string, WordData>());
-
+  // keywords user can search for
+  const [wordMap, setWordMap] = useState(new Map<string, WordData>());
+  const [display, setDisplay] = useState(false);
 
   /** question index, question */
   const questionMap = new Map<number, string>();
 
   /** question index, line number, phrase */
   const phraseMap = new Map<QuestionAndLine, string>();
-
-  /** word, count, [{question index, line number}] */
-  const wordMap = new Map<string, WordData>();
 
   /**
    * Determines whether the string should be filtered out
@@ -205,36 +194,125 @@ export default function SelectPage({ content, wordCountCutoff }: SelectProps) {
     });
 
     for (let { word, data } of tempArr) {
-      wordMap.set(word, data);
+      updateWordMap(word, data)
     }
 
-    // add logic to filter words that are in ignore list
+    setWordMap(wordMap);
+  }
+
+  function updateWordMap(word: string, data: WordData) {
+    if (!ignoreFile.find((ignoreParams) => ignoreParams.word === word)) {
+      wordMap.set(word, data);
+    }
   }
 
   function processContent(content: string) {
-
     // normalize line endings for different OSes
     let lines = content.replace(/\r\n/g, "\n").split("\n");
 
     // add questions to questionMap
-    processFirstLine(formatSplitLine(lines[0].split(","), 1))
+    if (!questionMap.size)
+      processFirstLine(formatSplitLine(lines[0].split(","), 1))
 
     // add relevant phrases with metadata to map
-    populatePhraseMap(populatePhraseCounter(lines));
+    if (!phraseMap.size)
+      populatePhraseMap(populatePhraseCounter(lines));
 
     // add relevant words with metadata to map
-    populateWordMap(populateWordCounter());
+    if (!wordMap.size)
+      populateWordMap(populateWordCounter());
 
-    console.log(wordMap);
+    setDisplay(true);
+  }
+
+  function createWordList(map: Map<string, WordData>) {
+    let clunkyArr: [string, WordData][] = [];
+
+    for (let [key, value] of map) {
+      clunkyArr.push([key, value]);
+    }
+
+    return clunkyArr;
+  }
+
+  function addToIgnoreFile(word: string, permanent: boolean) {
+    let newIgnoreFile = [...ignoreFile, { word: word, permanent: permanent }]
+    setIgnoreFile(newIgnoreFile);
+    window.api.setToStore("ignore-file", newIgnoreFile);
+    console.log(word, "added to ignore file")
+  }
+
+  function handleCheck(e: any) {
+    if (searchWords.includes(e.target.name)) {
+      searchWords.splice(searchWords.indexOf(e.target.name), 1);
+      setSearchWords(searchWords)
+    }
+    else
+      setSearchWords([...searchWords, e.target.name])
+  }
+
+  function pruneWordMap() {
+
+    // TODO
+    // add stuff back to word map if ignore file changed... state is freaking out though
+
+    for (let [word, _] of wordMap) {
+      if (ignoreFile.find((iParams) => iParams.word === word))
+        wordMap.delete(word)
+    }
+
+    setWordMap(new Map(wordMap));
   }
 
   useEffect(() => {
-    console.log("processContent would run")
-  }, [])
+    if (content !== "") {
+      processContent(content);
+      console.log("content processed")
+    }
+  }, [content])
+
+  useEffect(() => {
+    pruneWordMap();
+    console.log("word map pruned")
+  }, [ignoreFile])
 
   return (
-    <div className="d-flex flex-column align-items-center gap-2">
-      <button onClick={() => processContent(content)}>process content</button>
+    <div className="d-flex flex-column justify-content-center align-items-center gap-2">
+      {display && (
+        <div className="mt-2" style={{ width: "60vw" }}>
+          <button className="btn btn-primary" type="button" onClick={() => console.log("button clicked")}>Display responses containing selected words</button>
+
+          <div className="d-flex justify-content-between mt-2">
+            <div >
+              Ignore permanently
+            </div>
+            <div>
+              Word count
+            </div>
+            <div>
+              Ignore for this session
+            </div>
+          </div>
+
+          {createWordList(wordMap).map(([word, data]) => {
+            return (
+              <div key={word} className="d-flex justify-content-between gap-3 mt-3">
+                <button className="btn btn-danger" type="button" onClick={() => addToIgnoreFile(word, true)}>Ignore</button>
+
+                <div className="form-check d-flex align-items-center gap-2" style={{ width: "100px" }}>
+                  <input className="form-check-input" id={word} type="checkbox" name={word} onChange={handleCheck} />
+                  <label className="form-check-label d-flex gap-2" htmlFor={word}>
+                    <span>{word}</span>
+                    <span>{data.count}</span>
+                  </label>
+
+                </div>
+                <button type="button" onClick={() => addToIgnoreFile(word, false)}>Ignore</button>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
