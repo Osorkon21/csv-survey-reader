@@ -217,17 +217,24 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
     let lines = content.replace(/\r\n/g, "\n").split("\n");
 
     // add questions to questionMap
-    if (!questionMap.size)
+    if (!questionMap.size) {
+      console.log("questionMap is empty")
       processFirstLine(formatSplitLine(lines[0].split(","), 1))
+    }
+
 
     // add relevant phrases with metadata to map
-    if (!phraseMap.size)
+    if (!phraseMap.size) {
+      console.log("phraseMap is empty")
       populatePhraseMap(populatePhraseCounter(lines));
+    }
+
 
     // add relevant words with metadata to map
     if (!wordMap.size) {
+      console.log("wordMap is empty")
       populateWordMap(populateWordCounter());
-      setWordMap(wordMap);
+      setWordMap(new Map(wordMap));
     }
 
     setDisplay(true);
@@ -259,9 +266,13 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
   }
 
   function pruneWordMap() {
+    console.log("before clear", wordMap)
+
     wordMap.clear();
 
     populateWordMap(populateWordCounter());
+
+    console.log("after clear", wordMap)
 
     setWordMap(new Map(wordMap));
   }
@@ -269,13 +280,24 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
   useEffect(() => {
     if (content !== "") {
       processContent(content);
+
       console.log("content processed")
     }
   }, [content])
 
   useEffect(() => {
+    console.log("questionMap", questionMap)
+    console.log("phraseMap", phraseMap)
     pruneWordMap();
   }, [ignoreFile])
+
+  useEffect(() => {
+    console.log(questionMap)
+  }, [questionMap])
+
+  useEffect(() => {
+    console.log(phraseMap)
+  }, [phraseMap])
 
   return (
     <div className="d-flex flex-column justify-content-center align-items-center gap-2">

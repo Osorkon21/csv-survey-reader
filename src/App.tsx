@@ -32,7 +32,7 @@ export default function App() {
       await setDefaultIgnoreFile();
     }
     else {
-
+      // filter out temporary words in iFile here...
 
       setIgnoreFile(iFile);
     }
