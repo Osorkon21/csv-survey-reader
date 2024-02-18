@@ -42,11 +42,11 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
   const [wordMap, setWordMap] = useState(new Map<string, WordData>());
   const [display, setDisplay] = useState(false);
 
-  /** question index, question */
-  const questionMap = new Map<number, string>();
+  // question index, question
+  const [questionMap, setQuestionMap] = useState(new Map<number, string>());
 
-  /** question index, line number, phrase */
-  const phraseMap = new Map<QuestionAndLine, string>();
+  // question index, line number, phrase
+  const [phraseMap, setPhraseMap] = useState(new Map<QuestionAndLine, string>());
 
   /**
    * Determines whether the string should be filtered out
@@ -67,9 +67,13 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
    * @param map first line string with question index and line number
    */
   function processFirstLine(map: Map<string, QuestionAndLine>): void {
+    let tempMap = new Map<number, string>();
+
     for (let [phrase, qal] of map) {
-      questionMap.set(qal.questionIndex, phrase)
+      tempMap.set(qal.questionIndex, phrase)
     }
+
+    setQuestionMap(tempMap);
   }
 
   /**
@@ -152,11 +156,15 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
    * @param phraseCounter phrase count with metadata
    */
   function populatePhraseMap(phraseCounter: Map<string, QuestionLineCount>) {
+    let tempMap = new Map<QuestionAndLine, string>();
+
     for (let [phrase, qlc] of phraseCounter) {
       if (qlc.count === 1) {
-        phraseMap.set({ questionIndex: qlc.questionIndex, line: qlc.line }, phrase)
+        tempMap.set({ questionIndex: qlc.questionIndex, line: qlc.line }, phrase)
       }
     }
+
+    setPhraseMap(tempMap);
   }
 
   function populateWordCounter(): { [word: string]: WordData } {
@@ -196,8 +204,6 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
     for (let { word, data } of tempArr) {
       updateWordMap(word, data)
     }
-
-    setWordMap(wordMap);
   }
 
   function updateWordMap(word: string, data: WordData) {
@@ -219,8 +225,10 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
       populatePhraseMap(populatePhraseCounter(lines));
 
     // add relevant words with metadata to map
-    if (!wordMap.size)
+    if (!wordMap.size) {
       populateWordMap(populateWordCounter());
+      setWordMap(wordMap);
+    }
 
     setDisplay(true);
   }
@@ -239,7 +247,6 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
     let newIgnoreFile = [...ignoreFile, { word: word, permanent: permanent }]
     setIgnoreFile(newIgnoreFile);
     window.api.setToStore("ignore-file", newIgnoreFile);
-    console.log(word, "added to ignore file")
   }
 
   function handleCheck(e: any) {
@@ -252,14 +259,9 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
   }
 
   function pruneWordMap() {
+    wordMap.clear();
 
-    // TODO
-    // add stuff back to word map if ignore file changed... state is freaking out though
-
-    for (let [word, _] of wordMap) {
-      if (ignoreFile.find((iParams) => iParams.word === word))
-        wordMap.delete(word)
-    }
+    populateWordMap(populateWordCounter());
 
     setWordMap(new Map(wordMap));
   }
@@ -273,7 +275,6 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
 
   useEffect(() => {
     pruneWordMap();
-    console.log("word map pruned")
   }, [ignoreFile])
 
   return (
@@ -283,21 +284,22 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
           <button className="btn btn-primary" type="button" onClick={() => console.log("button clicked")}>Display responses containing selected words</button>
 
           <div className="d-flex justify-content-between mt-2">
-            <div >
-              Ignore permanently
-            </div>
-            <div>
+            <div className="text-start" style={{ width: "47%" }}>
               Word count
             </div>
-            <div>
-              Ignore for this session
+            {/* <div className="border"></div> */}
+            <div className="text-start" style={{ width: "28%" }}>
+              Ignore permanently
+            </div>
+            {/* <div className="border"></div> */}
+            <div className="text-end" style={{ width: "25%" }}>
+              Ignore for session
             </div>
           </div>
 
           {createWordList(wordMap).map(([word, data]) => {
             return (
-              <div key={word} className="d-flex justify-content-between gap-3 mt-3">
-                <button className="btn btn-danger" type="button" onClick={() => addToIgnoreFile(word, true)}>Ignore</button>
+              <div key={word} className="d-flex justify-content-between mt-3">
 
                 <div className="form-check d-flex align-items-center gap-2" style={{ width: "100px" }}>
                   <input className="form-check-input" id={word} type="checkbox" name={word} onChange={handleCheck} />
@@ -305,9 +307,16 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
                     <span>{word}</span>
                     <span>{data.count}</span>
                   </label>
-
                 </div>
-                <button type="button" onClick={() => addToIgnoreFile(word, false)}>Ignore</button>
+
+                <div className="d-flex align-items-center">
+                  <button className="btn btn-danger" type="button" onClick={() => addToIgnoreFile(word, true)}>Ignore</button>
+                </div>
+
+                <div>
+                  <button type="button" onClick={() => addToIgnoreFile(word, false)}>Ignore</button>
+                </div>
+
               </div>
             )
           })}
