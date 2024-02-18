@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { IgnoreParams } from "../../electron/handle-functions"
+import { defaultIgnoreFile } from "../utils/default-ignore-file";
 
 interface SelectProps {
   content: string
@@ -195,15 +196,23 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
     });
 
     for (let { word, data } of tempArr) {
-      updateWordMap(word, data)
+      updateWordMap(word, data);
+      updateDefaultWordMap(word, data);
     }
 
     setWordMap(wordMap);
+    setDefaultWordMap(defaultWordMap);
   }
 
   function updateWordMap(word: string, data: WordData) {
     if (!ignoreFile.find((ignoreParams) => ignoreParams.word === word)) {
       wordMap.set(word, data);
+    }
+  }
+
+  function updateDefaultWordMap(word: string, data: WordData) {
+    if (!defaultIgnoreFile.find((ignoreParams) => ignoreParams.word === word)) {
+      defaultWordMap.set(word, data);
     }
   }
 
@@ -268,7 +277,14 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
   }, [content])
 
   useEffect(() => {
-    pruneWordMap();
+    if (ignoreFile === defaultIgnoreFile) {
+      if (defaultWordMap.size > 0) {
+        setWordMap(new Map<string, WordData>(defaultWordMap));
+      }
+    }
+    else {
+      pruneWordMap();
+    }
   }, [ignoreFile])
 
   return (
