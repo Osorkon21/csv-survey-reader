@@ -15,8 +15,9 @@ declare global {
   type SearchWord = {
     word: string,
     data: {
-      questionIndex: number,
-      line: number
+      question: string,
+      line: number,
+      response: string
     }[]
   }
 }

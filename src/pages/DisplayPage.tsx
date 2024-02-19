@@ -13,6 +13,26 @@ export default function DisplayPage({ searchWords }: DisplayProps) {
   }
 
   return (
-    <>DISPLAY</>
+    <>
+      {searchWords.map(searchWord => (
+        <>
+          <div className="mt-4">{searchWord.word.toUpperCase()}</div>
+
+          <div className="p-2 mt-2" key={searchWord.word} style={{ border: `2px solid ${getRandomColor()}` }}>
+
+            {searchWord.data.map(wordData => (
+              <div key={wordData.response}>
+                <div className="text-info text-start">QUESTION: <span className="fst-italic">{wordData.question}</span></div>
+                <br></br>
+                <div className=" text-start">RESPONSE: {wordData.response}</div>
+                <br></br>
+              </div>))}
+          </div>
+        </>
+
+
+
+      ))}
+    </>
   )
 }

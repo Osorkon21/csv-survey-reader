@@ -265,15 +265,65 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
       setSearchWords(searchWords);
     }
     else {
-      let newData = wordMap.get(e.target.name)?.data;
+      let qals = wordMap.get(e.target.name)?.data;
 
-      // add relevant word and phrase data here...
-
-      if (newData !== undefined) {
+      if (qals) {
         let newSWord: SearchWord = {
           word: e.target.name,
-          data: newData
-        };
+          data: []
+        }
+
+        for (let qal of qals) {
+          let question = questionMap.get(qal.questionIndex);
+          let line = qal.line;
+          let response = "";
+
+          for (let [qal1, response1] of phraseMap) {
+            if (qal1.line === qal.line && qal1.questionIndex === qal.questionIndex) {
+              response = response1;
+              break;
+            }
+          }
+
+          if (question && response) {
+            let newData = {
+              question: question,
+              line: line,
+              response: response
+            }
+
+            newSWord.data.push(newData);
+          }
+
+          // handle responses that do not have a valid questionIndex, walk backwards through questionMap until you find the relevant question
+          else if (!question && response) {
+            let index = qal.questionIndex - 1;
+
+            while (index >= 0) {
+              let tempQuestion = questionMap.get(index);
+
+              if (tempQuestion) {
+                let newData = {
+                  question: tempQuestion,
+                  line: line,
+                  response: response
+                }
+
+                newSWord.data.push(newData);
+
+                break;
+              }
+
+              index--;
+            }
+          }
+          else {
+            console.log("problem question index", qal.questionIndex)
+            console.log("problem question", question)
+            console.log("problem phrase", response)
+            console.error(`Question and/or Phrase not found for ${e.target.name} data`)
+          }
+        }
 
         searchWords.push(newSWord);
         setSearchWords(searchWords);
@@ -334,11 +384,11 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
             <div className="text-start" style={{ width: "47%" }}>
               Word count
             </div>
-            <div className="text-start" style={{ width: "28%" }}>
-              Ignore permanently
-            </div>
-            <div className="text-end" style={{ width: "25%" }}>
+            <div className="text-start" style={{ width: "25%" }}>
               Ignore for session
+            </div>
+            <div className="text-end" style={{ width: "28%" }}>
+              Ignore permanently
             </div>
           </div>
 
@@ -354,12 +404,12 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
                   </label>
                 </div>
 
-                <div className="d-flex align-items-center">
-                  <button className="btn btn-danger" type="button" onClick={() => addToIgnoreFile(word, true)}>Ignore</button>
-                </div>
-
                 <div>
                   <button type="button" onClick={() => addToIgnoreFile(word, false)}>Ignore</button>
+                </div>
+
+                <div className="d-flex align-items-center">
+                  <button className="btn btn-danger" type="button" onClick={() => addToIgnoreFile(word, true)}>Ignore</button>
                 </div>
               </div>
             )
