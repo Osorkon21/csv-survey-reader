@@ -2,7 +2,7 @@ import { HashRouter, Routes, Route } from 'react-router-dom';
 import './App.css'
 import { useState, useEffect } from "react"
 import type { ContextBridgeApi } from '../electron/preload';
-import { LandingPage, SelectPage } from "./pages"
+import { LandingPage, SelectPage, DisplayPage } from "./pages"
 import { Header } from "./components"
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { defaultIgnoreFile } from './utils/default-ignore-file';
@@ -12,13 +12,20 @@ declare global {
   interface Window {
     api: ContextBridgeApi
   }
+  type SearchWord = {
+    word: string,
+    data: {
+      questionIndex: number,
+      line: number
+    }[]
+  }
 }
 
 export default function App() {
   const [content, setContent] = useState("");
   const [wordCountCutoff, setWordCountCutoff] = useState(10);
   const [ignoreFile, setIgnoreFile] = useState<IgnoreParams[]>([]);
-  const [searchWords, setSearchWords] = useState<string[]>([]);
+  const [searchWords, setSearchWords] = useState<SearchWord[]>([]);
 
   async function setDefaultIgnoreFile() {
     await window.api.setToStore("ignore-file", defaultIgnoreFile)
@@ -32,9 +39,9 @@ export default function App() {
       await setDefaultIgnoreFile();
     }
     else {
-      // filter out temporary words in iFile here...
-
-      setIgnoreFile(iFile);
+      let filteredIFile = iFile.filter((iParams) => iParams.permanent === true)
+      await window.api.setToStore("ignore-file", filteredIFile);
+      setIgnoreFile(filteredIFile);
     }
   }
 
@@ -64,6 +71,9 @@ export default function App() {
           setIgnoreFile={setIgnoreFile}
           searchWords={searchWords}
           setSearchWords={setSearchWords}
+        />} />
+        <Route path="/display" element={<DisplayPage
+          searchWords={searchWords}
         />} />
       </Routes>
     </HashRouter>

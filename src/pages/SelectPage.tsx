@@ -1,17 +1,18 @@
 import { useState, useEffect } from "react"
 import { IgnoreParams } from "../../electron/handle-functions"
-import { defaultIgnoreFile } from "../utils/default-ignore-file";
+import { defaultIgnoreFile } from "../utils/default-ignore-file"
 
 interface SelectProps {
   content: string
   wordCountCutoff: number
   ignoreFile: IgnoreParams[]
   setIgnoreFile: React.Dispatch<React.SetStateAction<IgnoreParams[]>>
-  searchWords: string[]
-  setSearchWords: React.Dispatch<React.SetStateAction<string[]>>
+  searchWords: SearchWord[]
+  setSearchWords: React.Dispatch<React.SetStateAction<SearchWord[]>>
 }
 
 export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIgnoreFile, searchWords, setSearchWords }: SelectProps) {
+
   /** question index */
   interface Question {
     questionIndex: number
@@ -24,7 +25,7 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
 
   /** question index, line where value present, count */
   interface QuestionLineCount extends QuestionAndLine {
-    count: number,
+    count: number
   };
 
   /** count, [{question index, line number}] */
@@ -43,12 +44,13 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
   const [wordMap, setWordMap] = useState(new Map<string, WordData>());
   const [display, setDisplay] = useState(false);
   const [defaultWordMap, setDefaultWordMap] = useState(new Map<string, WordData>());
+  const [noFileSelected, setNoFileSelected] = useState("");
 
-  /** question index, question */
-  const questionMap = new Map<number, string>();
+  // question index, question
+  const [questionMap, setQuestionMap] = useState(new Map<number, string>());
 
-  /** question index, line number, phrase */
-  const phraseMap = new Map<QuestionAndLine, string>();
+  // question index, line number, phrase
+  const [phraseMap, setPhraseMap] = useState(new Map<QuestionAndLine, string>());
 
   /**
    * Determines whether the string should be filtered out
@@ -72,6 +74,8 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
     for (let [phrase, qal] of map) {
       questionMap.set(qal.questionIndex, phrase)
     }
+
+    setQuestionMap(questionMap);
   }
 
   /**
@@ -153,18 +157,24 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
    * Adds unique phrases and metadata to map
    * @param phraseCounter phrase count with metadata
    */
-  function populatePhraseMap(phraseCounter: Map<string, QuestionLineCount>) {
+  function populatePhraseAndWordMaps(phraseCounter: Map<string, QuestionLineCount>) {
     for (let [phrase, qlc] of phraseCounter) {
       if (qlc.count === 1) {
         phraseMap.set({ questionIndex: qlc.questionIndex, line: qlc.line }, phrase)
       }
     }
+
+    setPhraseMap(phraseMap);
+
+    let wordCounter = populateWordCounter(new Map<QuestionAndLine, string>(phraseMap))
+
+    populateWordMap(wordCounter);
   }
 
-  function populateWordCounter(): { [word: string]: WordData } {
+  function populateWordCounter(pMap: Map<QuestionAndLine, string>): { [word: string]: WordData } {
     let wordCounter: { [word: string]: WordData } = {};
 
-    for (let [{ questionIndex, line }, phrase] of phraseMap) {
+    for (let [{ questionIndex, line }, phrase] of pMap) {
       let words = phrase.split(" ");
 
       for (let word of words) {
@@ -175,7 +185,7 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
 
         wordCounter[word].count++;
 
-        if (!wordCounter[word].data.includes({ questionIndex: questionIndex, line: line }))
+        if (!wordCounter[word].data.find((qal) => qal.questionIndex === questionIndex && qal.line === line))
           wordCounter[word].data.push({ questionIndex: questionIndex, line: line })
       }
     }
@@ -187,7 +197,7 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
     let tempArr: { word: string, data: WordData }[] = [];
 
     for (let [word, wordData] of Object.entries(wordCounter)) {
-      if (wordData.count > wordCountCutoff)
+      if (wordData.count >= wordCountCutoff)
         tempArr.push({ word: word, data: wordData });
     }
 
@@ -224,13 +234,9 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
     if (!questionMap.size)
       processFirstLine(formatSplitLine(lines[0].split(","), 1))
 
-    // add relevant phrases with metadata to map
+    // add relevant phrases and words with metadata to maps
     if (!phraseMap.size)
-      populatePhraseMap(populatePhraseCounter(lines));
-
-    // add relevant words with metadata to map
-    if (!wordMap.size)
-      populateWordMap(populateWordCounter());
+      populatePhraseAndWordMaps(populatePhraseCounter(lines));
 
     setDisplay(true);
   }
@@ -252,12 +258,29 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
   }
 
   function handleCheck(e: any) {
-    if (searchWords.includes(e.target.name)) {
-      searchWords.splice(searchWords.indexOf(e.target.name), 1);
-      setSearchWords(searchWords)
+    let index = searchWords.findIndex((sWord) => sWord.word === e.target.name)
+
+    if (index !== -1) {
+      searchWords.splice(index, 1);
+      setSearchWords(searchWords);
     }
-    else
-      setSearchWords([...searchWords, e.target.name])
+    else {
+      let newData = wordMap.get(e.target.name)?.data;
+
+      // add relevant word and phrase data here...
+
+      if (newData !== undefined) {
+        let newSWord: SearchWord = {
+          word: e.target.name,
+          data: newData
+        };
+
+        searchWords.push(newSWord);
+        setSearchWords(searchWords);
+      }
+      else
+        console.error("Search word not found in wordMap!");
+    }
   }
 
   function pruneWordMap() {
@@ -274,6 +297,9 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
       processContent(content);
       console.log("content processed")
     }
+    else {
+      setNoFileSelected("NO .CSV FILE SELECTED")
+    }
   }, [content])
 
   useEffect(() => {
@@ -287,11 +313,22 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
     }
   }, [ignoreFile])
 
+  useEffect(() => {
+    if (searchWords.length)
+      setSearchWords([]);
+  }, [])
+
   return (
     <div className="d-flex flex-column justify-content-center align-items-center gap-2">
+      {!display && (
+        <p className="text-danger mt-5">
+          {noFileSelected}
+        </p>
+      )}
+
       {display && (
         <div className="mt-2" style={{ width: "60vw" }}>
-          <button className="btn btn-primary" type="button" onClick={() => console.log("button clicked")}>Display responses containing selected words</button>
+          <button className="btn btn-primary" type="button" onClick={() => window.location.href = "#/display"}>Display responses containing selected words</button>
 
           <div className="d-flex justify-content-between mt-2">
             <div className="text-start" style={{ width: "47%" }}>
