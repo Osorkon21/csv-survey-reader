@@ -14,6 +14,7 @@ declare global {
   }
   type SearchWord = {
     word: string,
+    count: number,
     data: {
       question: string,
       line: number,
@@ -48,7 +49,6 @@ export default function App() {
 
   useEffect(() => {
     loadIgnoreFile();
-    console.log("ignore file loaded")
   }, [])
 
   return (
@@ -75,6 +75,7 @@ export default function App() {
         />} />
         <Route path="/display" element={<DisplayPage
           searchWords={searchWords}
+          setSearchWords={setSearchWords}
         />} />
       </Routes>
     </HashRouter>

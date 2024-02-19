@@ -265,13 +265,16 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
       setSearchWords(searchWords);
     }
     else {
-      let qals = wordMap.get(e.target.name)?.data;
+      let wordData = wordMap.get(e.target.name);
 
-      if (qals) {
+      if (wordData) {
         let newSWord: SearchWord = {
           word: e.target.name,
+          count: wordData.count,
           data: []
         }
+
+        let qals = wordData.data
 
         for (let qal of qals) {
           let question = questionMap.get(qal.questionIndex);
@@ -345,7 +348,6 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
   useEffect(() => {
     if (content !== "") {
       processContent(content);
-      console.log("content processed")
     }
     else {
       setNoFileSelected("NO .CSV FILE SELECTED")
