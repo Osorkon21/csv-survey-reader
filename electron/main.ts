@@ -1,6 +1,7 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain } from 'electron'
 import path from 'node:path'
-import fs from "fs/promises"
+import { handleGetFromStore, handleSetToStore, handleOpenFile, handleReadFile, IgnoreParams } from "./handle-functions"
+
 
 // The built directory structure
 //
@@ -19,28 +20,16 @@ let win: BrowserWindow | null
 // 🚧 Use ['ENV_NAME'] avoid vite:define plugin - Vite@2.x
 const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
 
-async function handleOpenFile() {
-  const { canceled, filePaths } = await dialog.showOpenDialog({})
-  if (!canceled) {
-    return filePaths[0]
-  }
-}
-
-async function handleReadFile(filePath: string) {
-  const content = await fs.readFile(filePath, "utf-8")
-
-  return content;
-}
-
 function createWindow() {
   win = new BrowserWindow({
-    width: 1200,
-    height: 900,
+    width: 800,
+    height: 800,
     icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
-    autoHideMenuBar: true
+    autoHideMenuBar: true,
+    show: false
   })
 
   // Test active push message to Renderer-process.
@@ -54,6 +43,10 @@ function createWindow() {
     // win.loadFile('dist/index.html')
     win.loadFile(path.join(process.env.DIST, 'index.html'))
   }
+
+  win.once("ready-to-show", () => {
+    win?.show();
+  })
 }
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -69,6 +62,8 @@ app.on('window-all-closed', () => {
 app.whenReady().then(() => {
   ipcMain.handle("dialog:openFile", handleOpenFile);
   ipcMain.handle("dialog:readFile", (_, filePath: string) => handleReadFile(filePath));
+  ipcMain.handle("dialog:getFromStore", (_, key: string) => handleGetFromStore(key));
+  ipcMain.handle("dialog:setToStore", (_, key: string, ignoreList: IgnoreParams[]) => handleSetToStore(key, ignoreList));
 
   createWindow();
 

@@ -1,8 +1,11 @@
 import { contextBridge, ipcRenderer } from 'electron'
+import { IgnoreParams } from "./handle-functions"
 
 export type ContextBridgeApi = {
   openFile: () => Promise<string>,
-  readFile: (filePath: string) => Promise<string>
+  readFile: (filePath: string) => Promise<string>,
+  getFromStore: (key: string) => Promise<IgnoreParams[]>,
+  setToStore: (key: string, ignoreList: IgnoreParams[]) => Promise<void>
 }
 
 // --------- Expose some API to the Renderer process ---------
@@ -10,7 +13,9 @@ contextBridge.exposeInMainWorld('ipcRenderer', withPrototype(ipcRenderer))
 
 contextBridge.exposeInMainWorld("api", {
   openFile: () => ipcRenderer.invoke("dialog:openFile"),
-  readFile: (filePath: string) => ipcRenderer.invoke("dialog:readFile", filePath)
+  readFile: (filePath: string) => ipcRenderer.invoke("dialog:readFile", filePath),
+  getFromStore: (key: string) => ipcRenderer.invoke("dialog:getFromStore", key),
+  setToStore: (key: string, ignoreList: IgnoreParams[]) => ipcRenderer.invoke("dialog:setToStore", key, ignoreList)
 });
 
 // `exposeInMainWorld` can't detect attributes and methods of `prototype`, manually patching it.
