@@ -28,6 +28,8 @@ export default function App() {
   const [wordCountCutoff, setWordCountCutoff] = useState(10);
   const [ignoreFile, setIgnoreFile] = useState<IgnoreParams[]>([]);
   const [searchWords, setSearchWords] = useState<SearchWord[]>([]);
+  const [displaySelectNew, setDisplaySelectNew] = useState(false);
+  const [displaySelectWords, setDisplaySelectWords] = useState(false);
 
   async function setDefaultIgnoreFile() {
     await window.api.setToStore("ignore-file", defaultIgnoreFile)
@@ -53,17 +55,23 @@ export default function App() {
 
   return (
     <HashRouter>
-      <div>
-        <Header
-          setDefaultIgnoreFile={setDefaultIgnoreFile}
-        ></Header>
-      </div>
+
+      {content && (
+        <div>
+          <Header
+            displaySelectNew={displaySelectNew}
+            displaySelectWords={displaySelectWords}
+          ></Header>
+        </div>
+      )}
 
       <Routes>
         <Route path="/" element={<LandingPage
           setContent={setContent}
           wordCountCutoff={wordCountCutoff}
           setWordCountCutoff={setWordCountCutoff}
+          setDisplaySelectNew={setDisplaySelectNew}
+          setDisplaySelectWords={setDisplaySelectWords}
         />} />
         <Route path="/select" element={<SelectPage
           content={content}
@@ -72,10 +80,14 @@ export default function App() {
           setIgnoreFile={setIgnoreFile}
           searchWords={searchWords}
           setSearchWords={setSearchWords}
+          setDisplaySelectNew={setDisplaySelectNew}
+          setDisplaySelectWords={setDisplaySelectWords}
         />} />
         <Route path="/display" element={<DisplayPage
           searchWords={searchWords}
           setSearchWords={setSearchWords}
+          setDisplaySelectNew={setDisplaySelectNew}
+          setDisplaySelectWords={setDisplaySelectWords}
         />} />
       </Routes>
     </HashRouter>

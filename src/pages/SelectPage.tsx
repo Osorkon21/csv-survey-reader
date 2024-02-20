@@ -9,9 +9,11 @@ interface SelectProps {
   setIgnoreFile: React.Dispatch<React.SetStateAction<IgnoreParams[]>>
   searchWords: SearchWord[]
   setSearchWords: React.Dispatch<React.SetStateAction<SearchWord[]>>
+  setDisplaySelectNew: React.Dispatch<React.SetStateAction<boolean>>
+  setDisplaySelectWords: React.Dispatch<React.SetStateAction<boolean>>
 }
 
-export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIgnoreFile, searchWords, setSearchWords }: SelectProps) {
+export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIgnoreFile, searchWords, setSearchWords, setDisplaySelectNew, setDisplaySelectWords }: SelectProps) {
 
   /** question index */
   interface Question {
@@ -44,7 +46,6 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
   const [wordMap, setWordMap] = useState(new Map<string, WordData>());
   const [display, setDisplay] = useState(false);
   const [defaultWordMap, setDefaultWordMap] = useState(new Map<string, WordData>());
-  const [noFileSelected, setNoFileSelected] = useState("");
 
   // question index, question
   const [questionMap, setQuestionMap] = useState(new Map<number, string>());
@@ -349,9 +350,6 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
     if (content !== "") {
       processContent(content);
     }
-    else {
-      setNoFileSelected("NO .CSV FILE SELECTED")
-    }
   }, [content])
 
   useEffect(() => {
@@ -368,30 +366,28 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
   useEffect(() => {
     if (searchWords.length)
       setSearchWords([]);
+
+    setDisplaySelectNew(true);
+    setDisplaySelectWords(false);
   }, [])
 
   return (
     <div className="d-flex flex-column justify-content-center align-items-center gap-2">
-      {!display && (
-        <p className="text-danger mt-5">
-          {noFileSelected}
-        </p>
-      )}
 
       {display && (
         <div className="mt-2" style={{ width: "60vw" }}>
-          <button className="btn btn-primary" type="button" onClick={() => window.location.href = "#/display"}>Display responses containing selected words</button>
+          <button className="btn btn-primary" type="button" style={{ fontFamily: "Helvetica" }} onClick={() => window.location.href = "#/display"}>Show Selected Responses</button>
 
           <div className="d-flex justify-content-between mt-2">
             <div className="text-start" style={{ width: "47%" }}>
               Word count
             </div>
-            <div className="text-start" style={{ width: "25%" }}>
+            <div className="text-end" style={{ width: "25%" }}>
               Ignore for session
             </div>
-            <div className="text-end" style={{ width: "28%" }}>
+            {/* <div className="text-end" style={{ width: "28%" }}>
               Ignore permanently
-            </div>
+            </div> */}
           </div>
 
           {createWordList(wordMap).map(([word, data]) => {
@@ -410,9 +406,9 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
                   <button type="button" onClick={() => addToIgnoreFile(word, false)}>Ignore</button>
                 </div>
 
-                <div className="d-flex align-items-center">
+                {/* <div className="d-flex align-items-center">
                   <button className="btn btn-danger" type="button" onClick={() => addToIgnoreFile(word, true)}>Ignore</button>
-                </div>
+                </div> */}
               </div>
             )
           })}

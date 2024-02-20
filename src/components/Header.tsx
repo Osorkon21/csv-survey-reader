@@ -1,15 +1,26 @@
 type HeaderProps = {
-  setDefaultIgnoreFile: () => Promise<void>
+  displaySelectNew: boolean
+  displaySelectWords: boolean
 }
 
-export default function Header({ setDefaultIgnoreFile }: HeaderProps) {
+export default function Header({ displaySelectNew, displaySelectWords }: HeaderProps) {
   return (
-    <div className="d-flex justify-content-between gap-4">
-      <button className="btn btn-success" style={{ fontFamily: "Helvetica serif" }} onClick={() => window.location.href = "#/"}>SELECT FILE</button>
+    <div style={{ width: "400px", minWidth: "400px", maxWidth: "400px", margin: "auto" }}>
+      <div className="d-flex justify-content-between gap-4 w-100">
 
-      <button className="btn btn-secondary" style={{ fontFamily: "Helvetica serif" }} onClick={() => window.location.href = "#/select"}>SELECT WORDS</button>
+        {displaySelectNew && (
+          <button className="btn btn-success" style={{ fontFamily: "Helvetica" }} onClick={() => window.location.href = "#/"}>Select new .csv</button>
+        )}
 
-      <button className="btn btn-danger" style={{ fontFamily: "Helvetica serif" }} onClick={() => setDefaultIgnoreFile()}>Set word ignore list to default</button>
+        {displaySelectWords && (
+          <>
+            <div></div>
+            <button className="btn btn-secondary" style={{ fontFamily: "Helvetica" }} onClick={() => window.location.href = "#/select"}>Select Words</button>
+          </>
+        )}
+
+        {/* <button className="btn btn-danger" style={{ fontFamily: "Helvetica" }} onClick={() => setDefaultIgnoreFile()}>Restore Default Ignore List</button> */}
+      </div>
     </div>
   )
 }

@@ -1,11 +1,14 @@
 import { useEffect } from "react"
+import { v4 as uuidv4 } from 'uuid';
 
 interface DisplayProps {
   searchWords: SearchWord[]
   setSearchWords: React.Dispatch<React.SetStateAction<SearchWord[]>>
+  setDisplaySelectNew: React.Dispatch<React.SetStateAction<boolean>>
+  setDisplaySelectWords: React.Dispatch<React.SetStateAction<boolean>>
 }
 
-export default function DisplayPage({ searchWords, setSearchWords }: DisplayProps) {
+export default function DisplayPage({ searchWords, setSearchWords, setDisplaySelectNew, setDisplaySelectWords }: DisplayProps) {
   function getRandomColor() {
     var letters = '0123456789ABCDEF';
     var color = '#';
@@ -23,20 +26,28 @@ export default function DisplayPage({ searchWords, setSearchWords }: DisplayProp
     setSearchWords([...searchWords])
   }
 
-  function capitalizeSearchWords(word: string, response: string) {
-    let re = new RegExp(`\\b${word}\\b`, "gi");
-
-    return response.replace(re, word.toUpperCase());
+  function getHighlightedText(text: string, highlight: string) {
+    const parts = text.split(new RegExp(`\\b(${highlight})\\b`, 'gi'));
+    return <span>{parts.map(part => part.toLowerCase() === highlight.toLowerCase() ? <mark key={uuidv4()}>{part}</mark> : part)}</span>;
   }
 
   useEffect(() => {
     if (searchWords) {
       sortSearchWords();
     }
+
+    setDisplaySelectNew(true);
+    setDisplaySelectWords(true);
   }, [])
 
   return (
     <>
+      {!searchWords.length && (
+        <div className="mt-5 text-danger">
+          No words selected. Go to "Select Words" and check boxes next to words you want to search for.
+        </div>
+      )}
+
       {searchWords.map(searchWord => (
         <div key={searchWord.word}>
           <h1 className="mt-4">Responses for "{searchWord.word}"</h1>
@@ -46,9 +57,7 @@ export default function DisplayPage({ searchWords, setSearchWords }: DisplayProp
             {searchWord.data.map((wordData, index) => (
               <div key={wordData.response}>
                 <div className="text-start text-info p-2">Question: <span className="fst-italic">{wordData.question}</span></div>
-
-                {/* highlight search words somehow... */}
-                <div className=" text-start p-2">Response: {capitalizeSearchWords(searchWord.word, wordData.response)}</div>
+                <div className=" text-start p-2">Response: {getHighlightedText(wordData.response, searchWord.word)}</div>
 
                 {index !== searchWord.data.length - 1 && (
                   <div style={{ border: `1px solid white` }}></div>
