@@ -375,8 +375,7 @@ export default function SelectPage({ content, wordCountCutoff, ignoreFile, setIg
     <div className="d-flex flex-column justify-content-center align-items-center gap-2">
 
       {display && (
-        <div className="mt-2" style={{ width: "60vw" }}>
-          <button className="btn btn-primary" type="button" style={{ fontFamily: "Helvetica" }} onClick={() => window.location.href = "#/display"}>Show Selected Responses</button>
+        <div className="mt-2" style={{ width: "40vw" }}>
 
           <div className="d-flex justify-content-between mt-2">
             <div className="text-start" style={{ width: "47%" }}>

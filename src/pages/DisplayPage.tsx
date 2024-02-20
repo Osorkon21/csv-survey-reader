@@ -38,6 +38,7 @@ export default function DisplayPage({ searchWords, setSearchWords, setDisplaySel
 
     setDisplaySelectNew(true);
     setDisplaySelectWords(true);
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" })
   }, [])
 
   return (

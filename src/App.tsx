@@ -29,7 +29,7 @@ export default function App() {
   const [ignoreFile, setIgnoreFile] = useState<IgnoreParams[]>([]);
   const [searchWords, setSearchWords] = useState<SearchWord[]>([]);
   const [displaySelectNew, setDisplaySelectNew] = useState(false);
-  const [displaySelectWords, setDisplaySelectWords] = useState(false);
+  const [displaySelectWords, setDisplaySelectWords] = useState(true);
 
   async function setDefaultIgnoreFile() {
     await window.api.setToStore("ignore-file", defaultIgnoreFile)
@@ -64,32 +64,34 @@ export default function App() {
           ></Header>
         </div>
       )}
+      <div style={{ marginTop: displaySelectWords ? "35px" : "70px" }}>
+        <Routes>
+          <Route path="/" element={<LandingPage
+            setContent={setContent}
+            wordCountCutoff={wordCountCutoff}
+            setWordCountCutoff={setWordCountCutoff}
+            setDisplaySelectNew={setDisplaySelectNew}
+            setDisplaySelectWords={setDisplaySelectWords}
+          />} />
+          <Route path="/select" element={<SelectPage
+            content={content}
+            wordCountCutoff={wordCountCutoff}
+            ignoreFile={ignoreFile}
+            setIgnoreFile={setIgnoreFile}
+            searchWords={searchWords}
+            setSearchWords={setSearchWords}
+            setDisplaySelectNew={setDisplaySelectNew}
+            setDisplaySelectWords={setDisplaySelectWords}
+          />} />
+          <Route path="/display" element={<DisplayPage
+            searchWords={searchWords}
+            setSearchWords={setSearchWords}
+            setDisplaySelectNew={setDisplaySelectNew}
+            setDisplaySelectWords={setDisplaySelectWords}
+          />} />
+        </Routes>
+      </div>
 
-      <Routes>
-        <Route path="/" element={<LandingPage
-          setContent={setContent}
-          wordCountCutoff={wordCountCutoff}
-          setWordCountCutoff={setWordCountCutoff}
-          setDisplaySelectNew={setDisplaySelectNew}
-          setDisplaySelectWords={setDisplaySelectWords}
-        />} />
-        <Route path="/select" element={<SelectPage
-          content={content}
-          wordCountCutoff={wordCountCutoff}
-          ignoreFile={ignoreFile}
-          setIgnoreFile={setIgnoreFile}
-          searchWords={searchWords}
-          setSearchWords={setSearchWords}
-          setDisplaySelectNew={setDisplaySelectNew}
-          setDisplaySelectWords={setDisplaySelectWords}
-        />} />
-        <Route path="/display" element={<DisplayPage
-          searchWords={searchWords}
-          setSearchWords={setSearchWords}
-          setDisplaySelectNew={setDisplaySelectNew}
-          setDisplaySelectWords={setDisplaySelectWords}
-        />} />
-      </Routes>
     </HashRouter>
   )
 }
